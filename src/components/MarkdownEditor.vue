@@ -21,7 +21,7 @@
         i.iconfont.icon-expand(@click="toggleFullScreen" v-else)
     .markdown__editor-content
       .content-wrapper(@mousedown="beginDrag")
-        textarea.markdown__editor-editor(@paste="pasteEvent" @scroll="scrollReset" ref="editor" v-model="content" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" @keydown="keydown")
+        textarea.markdown__editor-editor(@scroll="scrollReset" ref="editor" v-model="content" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" @keydown="keydown")
         .preview-tool(ref="preTool")
           .allow-wrapper(@click.stop="showPreview = !showPreview")
             .allow(:class="{'allow-right':showPreview, 'allow-left':!showPreview}")
@@ -106,18 +106,6 @@ export default {
     }
   },
   methods: {
-    pasteEvent (event) {
-      var items = (event.clipboardData || event.originalEvent.clipboardData).items
-      for (let index in items) {
-        let item = items[index]
-        if (item.kind === 'file') {
-          let blob = item.getAsFile()
-          let fileData = new window.FormData()
-          fileData.append(this.uploadOpt.name, blob)
-          this.uploadFormData(fileData)
-        }
-      }
-    },
     getText () {
       return this.$refs.preview.getText()
     },
