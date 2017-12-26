@@ -30,6 +30,8 @@
 
 .icon-image:before { content: "\eb26"; }
 
+.icon-video:before { content: "\f0162"; }
+
 .icon-italic:before { content: "\eb31"; }
 
 .icon-mailforward:before { content: "\eb52"; }

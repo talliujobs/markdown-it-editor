@@ -10,6 +10,8 @@
         i.iconfont.icon-chain(@click="doAction('[name]()', -1)" hotkey="ctrl+l")
         i.iconfont.icon-image(@click="uploadClick" v-if="uploadOpt.url")
           input(ref="upload", type="file", :name="uploadOpt.name" v-show="0", :accept="uploadOpt.accept" @change="fileUpload")
+        i.iconfont.icon-video(@click="uploadVideoClick" v-if="uploadVideoOpt.url")
+          input(ref="uploadVideo", type="file", :name="uploadVideoOpt.name" v-show="0", :accept="uploadVideoOpt.accept" @change="videoUpload")
         i.iconfont.icon-code(@click="toCode()" hotkey="ctrl+`")
         i.iconfont.icon-ellipsish(@click="doAction('\\n\\n---\\n\\n', 0, '')")
         i.iconfont.icon-quoteleft(@click="doAction('\\n> ', -1, '')")
@@ -45,7 +47,7 @@ function setEditorRange (editor, start, length = 0) {
 }
 import Preview from './MarkdownPreview'
 export default {
-  props: ['value', 'options', 'upload', 'zIndex', 'height'],
+  props: ['value', 'options', 'upload', 'video', 'zIndex', 'height'],
   data () {
     return {
       content: '',
@@ -54,6 +56,12 @@ export default {
       uploadOpt: {
         name: 'file',
         accept: 'image/jpg,image/jpeg,image/png',
+        url: 0,
+        header: {}
+      },
+      uploadVideoOpt: {
+        name: 'file',
+        accept: 'video/mp4',
         url: 0,
         header: {}
       },
@@ -83,6 +91,7 @@ export default {
   },
   created () {
     this.uploadOpt = {...this.uploadOpt, ...this.upload}
+    this.uploadVideoOpt = {...this.uploadVideoOpt, ...this.video}
     this.content = this.value
     this.history.push(this.content)
   },
@@ -162,16 +171,41 @@ export default {
     uploadClick () {
       this.$refs.upload.click()
     },
+    uploadVideoClick () {
+      this.$refs.uploadVideo.click()
+    },
     fileUpload () {
+      let that = this
       let input = this.$refs.upload
       let upload = this.$emit('custom-upload', input)
       if (upload === false) return
       let fileData = new window.FormData()
       fileData.append(input.name, input.files[0])
-      this.uploadFormData(fileData)
+      this.uploadFormData(
+        fileData,
+        this.uploadOpt,
+        function (text) {
+          that.insertTo(`\n![alt](${text})\n`)
+        }
+      )
     },
-    uploadFormData (formData) {
-      if (!this.uploadOpt.url) {
+    videoUpload () {
+      let that = this
+      let input = this.$refs.uploadVideo
+      let upload = this.$emit('custom-upload', input)
+      if (upload === false) return
+      let fileData = new window.FormData()
+      fileData.append(input.name, input.files[0])
+      this.uploadFormData(
+        fileData,
+        this.uploadVideoOpt,
+        function (text) {
+          that.insertTo(`\n<video id="video" controls="" preload="none" poster="http://media.w3.org/2010/05/sintel/poster.png">\n<source id="mp4" src="${text}" type="video/mp4">\n<p>Your user agent does not support the HTML5 Video element.</p>\n</video>\n`)
+        }
+      )
+    },
+    uploadFormData (formData, opt, callback) {
+      if (!opt.url) {
         this.error('请先配置上传路径')
         return false
       }
@@ -181,7 +215,9 @@ export default {
           if (xhr.status === 200) {
             let success = this.$emit('upload-success', xhr.responseText)
             if (success !== false) {
-              this.insertTo(`\n![alt](${xhr.responseText})\n`)
+              if (callback) {
+                callback(xhr.responseText)
+              }
             }
           } else {
             let error = this.$emit('upload-error', xhr)
@@ -198,10 +234,10 @@ export default {
           this.info(`上传中 ${e.loaded} / ${e.total} | ${pre}%`)
         }
       }
-      xhr.open('POST', this.uploadOpt.url, true)
-      if (this.uploadOpt.header) {
-        Object.keys(this.uploadOpt.header).forEach(k => {
-          xhr.setRequestHeader(k, this.uploadOpt.header[k])
+      xhr.open('POST', opt.url, true)
+      if (opt.header) {
+        Object.keys(opt.header).forEach(k => {
+          xhr.setRequestHeader(k, opt.header[k])
         })
       }
       xhr.send(formData)
